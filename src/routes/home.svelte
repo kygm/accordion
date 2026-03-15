@@ -1,5 +1,5 @@
 <script>
-  import { Link } from 'svelte-routing'
+  import { Link } from "svelte-routing";
 </script>
 
 <div class="home information">
@@ -26,7 +26,7 @@
   </main>
 
   <footer>
-    Made by <a href="https://www.taniarascia.com" target="_blank">Tania</a>.
-    <a href="https://github.com/taniarascia/accordion" target="_blank">Open source</a>.
+    Original creator: github.com/taniarascia Forked by kygm for additional
+    functionality
   </footer>
 </div>

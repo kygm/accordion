@@ -15,7 +15,100 @@ export const bassKeyMap = {
   '=': { row: 2, column: 6 },
 }
 
-export const one = [
+const NOTE_ORDER = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B']
+const NOTE_LABELS = {
+  C: 'C',
+  Db: 'D♭',
+  D: 'D',
+  Eb: 'E♭',
+  E: 'E',
+  F: 'F',
+  Gb: 'F♯',
+  G: 'G',
+  Ab: 'A♭',
+  A: 'A',
+  Bb: 'B♭',
+  B: 'B',
+}
+const DISPLAY_TO_NOTE_KEY = {
+  C: 'C',
+  Db: 'Db',
+  'D♭': 'Db',
+  D: 'D',
+  Eb: 'Eb',
+  'E♭': 'Eb',
+  E: 'E',
+  F: 'F',
+  'F#': 'Gb',
+  'F♯': 'Gb',
+  Gb: 'Gb',
+  'G♭': 'Gb',
+  G: 'G',
+  Ab: 'Ab',
+  'A♭': 'Ab',
+  A: 'A',
+  Bb: 'Bb',
+  'B♭': 'Bb',
+  B: 'B',
+}
+
+
+const TUNING_SHIFTS = {
+  FBE: 0,
+  GCF: 2,
+  EAD: -1,
+}
+
+function normalizeIndex(index) {
+  return ((index % NOTE_ORDER.length) + NOTE_ORDER.length) % NOTE_ORDER.length
+}
+
+function transposeNoteKey(noteKey, semitones) {
+  const index = NOTE_ORDER.indexOf(noteKey)
+  if (index < 0) {
+    throw new Error(`Unknown note key: ${noteKey}`)
+  }
+
+  return NOTE_ORDER[normalizeIndex(index + semitones)]
+}
+
+function transposeToneValue(value, semitones) {
+  return Number((value * Math.pow(2, semitones / 12)).toFixed(6))
+}
+
+function parseDisplayNote(noteName) {
+  const noteKey = DISPLAY_TO_NOTE_KEY[noteName]
+  if (!noteKey) {
+    throw new Error(`Unknown display note: ${noteName}`)
+  }
+
+  return noteKey
+}
+
+function transposeDisplayNote(noteName, semitones, preferLowercase = false) {
+  const isLowercase = noteName === noteName.toLowerCase()
+  const normalized = parseDisplayNote(noteName[0].toUpperCase() + noteName.slice(1))
+  const transposed = transposeNoteKey(normalized, semitones)
+  const display = NOTE_LABELS[transposed]
+
+  if (preferLowercase || isLowercase) {
+    return display.toLowerCase()
+  }
+
+  return display
+}
+
+function transposeButton(button, semitones) {
+  return {
+    ...button,
+    name: transposeDisplayNote(button.name, semitones),
+    frequency: Array.isArray(button.frequency)
+      ? button.frequency.map((hz) => transposeToneValue(hz, semitones))
+      : transposeToneValue(button.frequency, semitones),
+  }
+}
+
+const one = [
   // Pull
   { id: '1-1-pull', name: 'D♭', frequency: tone.Db[4] },
   { id: '1-2-pull', name: 'G', frequency: tone.G[3] },
@@ -40,7 +133,7 @@ export const one = [
   { id: '1-10-push', name: 'C', frequency: tone.C[6] },
 ]
 
-export const two = [
+const two = [
   // Pull
   { id: '2-1-pull', name: 'F♯', frequency: tone.Gb[4] },
   { id: '2-2-pull', name: 'A', frequency: tone.A[3] },
@@ -67,7 +160,7 @@ export const two = [
   { id: '2-11-push', name: 'F', frequency: tone.F[6] },
 ]
 
-export const three = [
+const three = [
   // Pull
   { id: '3-1-pull', name: 'B', frequency: tone.B[4] },
   { id: '3-2-pull', name: 'D', frequency: tone.D[4] },
@@ -92,7 +185,7 @@ export const three = [
   { id: '3-10-push', name: 'G', frequency: tone.G[6] },
 ]
 
-export const bassLayout = {
+const bassLayoutBase = {
   one: [
     { id: '1-1-pull-bass', name: 'gm', frequency: [tone.G[3], tone.Bb[4], tone.D[4]] },
     { id: '1-2-pull-bass', name: 'G', frequency: tone.G[2] },
@@ -127,86 +220,79 @@ export const bassLayout = {
   ],
 }
 
-// Scales
-export const scales = {
-  F: {
-    notes: [
-      ['3-3-pull'],
-      ['1-6-pull'],
-      ['2-6-pull'],
-      ['1-7-pull'],
-      ['2-7-pull'],
-      ['3-6-pull'],
-      ['1-9-pull'],
-      ['3-7-pull'],
-    ],
-    thirds: [
-      ['2-6-pull', '3-3-pull'],
-      ['1-6-pull', '1-7-pull'],
-      ['2-6-pull', '2-7-pull'],
-      ['1-7-pull', '1-8-pull'],
-      ['1-9-pull', '2-7-pull'],
-      ['3-7-pull', '3-6-pull'],
-      ['1-9-pull', '1-10-pull'],
-      ['2-10-pull', '3-7-pull'],
-    ],
-  },
-  Bb: {
-    notes: [
-      ['1-3-pull'],
-      ['2-3-pull'],
-      ['3-2-pull'],
-      ['2-4-pull'],
-      ['3-3-pull'],
-      ['1-6-pull'],
-      ['2-6-pull'],
-      ['1-7-pull'],
-    ],
-    thirds: [
-      ['1-3-pull', '1-4-pull'],
-      ['2-3-pull', '2-4-pull'],
-      ['3-2-pull', '3-3-pull'],
-      ['2-4-pull', '2-5-pull'],
-      ['3-3-pull', '2-6-pull'],
-      ['1-6-pull', '1-7-pull'],
-      ['2-6-pull', '2-7-pull'],
-      ['1-7-pull', '1-8-pull'],
-    ],
-  },
-  Eb: {
-    notes: [
-      ['2-4-pull'],
-      ['3-3-pull'],
-      ['2-5-pull'],
-      ['3-4-pull'],
-      ['1-7-pull'],
-      ['2-7-pull'],
-      ['3-6-pull'],
-      ['2-8-pull'],
-    ],
-    thirds: [
-      ['2-5-pull', '2-4-pull'],
-      ['3-3-pull', '3-4-pull'],
-      ['2-5-pull', '1-7-pull'],
-      ['3-4-pull', '3-5-pull'],
-      ['1-7-pull', '1-8-pull'],
-      ['2-7-pull', '2-8-pull'],
-      ['3-6-pull', '3-7-pull'],
-      ['2-8-pull', '2-9-pull'],
-    ],
-  },
+const baseLayout = { one, two, three }
+
+function buildTuningLayout(semitones) {
+  return Object.fromEntries(
+    Object.entries(baseLayout).map(([row, buttons]) => [
+      row,
+      buttons.map((button) => transposeButton(button, semitones)),
+    ])
+  )
 }
 
-export const layout = { one, two, three }
-export const buttonIdMap = [...one, ...two, ...three, ...bassLayout.one, ...bassLayout.two].reduce(
-  (acc, value) => {
-    return { ...acc, [value.id]: value }
-  },
-  {}
+function buildTuningBassLayout(semitones) {
+  return Object.fromEntries(
+    Object.entries(bassLayoutBase).map(([row, buttons]) => [
+      row,
+      buttons.map((button) => ({
+        ...button,
+        name: button.name.endsWith('m')
+          ? `${transposeDisplayNote(button.name.slice(0, -1), semitones, true)}m`
+          : transposeDisplayNote(button.name, semitones),
+        frequency: Array.isArray(button.frequency)
+          ? button.frequency.map((hz) => transposeToneValue(hz, semitones))
+          : transposeToneValue(button.frequency, semitones),
+      })),
+    ])
+  )
+}
+
+function createButtonIdMap(layout, bassLayout) {
+  return [...Object.values(layout).flat(), ...Object.values(bassLayout).flat()].reduce((acc, value) => {
+    acc[value.id] = value
+    return acc
+  }, {})
+}
+
+const tuningScaleLabels = {
+  FBE: ['F', 'Bb', 'Eb'],
+  GCF: ['G', 'C', 'F'],
+  EAD: ['E', 'A', 'D'],
+}
+
+function buildScaleSet(scaleLabels) {
+  return scaleLabels.map((label, index) => ({
+    key: label,
+    label: `${label} Major`,
+    row: Object.keys(baseLayout)[index],
+  }))
+}
+
+export const tuningLayouts = Object.fromEntries(
+  Object.entries(TUNING_SHIFTS).map(([tuning, semitones]) => {
+    const layout = buildTuningLayout(semitones)
+    const bassLayout = buildTuningBassLayout(semitones)
+
+    return [
+      tuning,
+      {
+        layout,
+        bassLayout,
+        buttonIdMap: createButtonIdMap(layout, bassLayout),
+        scales: buildScaleSet(tuningScaleLabels[tuning]),
+      },
+    ]
+  })
 )
+
 export const rowMap = { 1: 'one', 2: 'two', 3: 'three' }
 export const bassRowMap = { 1: 'one', 2: 'two' }
-export const rowTones = { FBE: { one: 'F', two: 'B♭', three: 'E♭' } }
+export const rowTones = {
+  FBE: { one: 'F', two: 'B♭', three: 'E♭' },
+  GCF: { one: 'G', two: 'C', three: 'F' },
+  EAD: { one: 'E', two: 'A', three: 'D' },
+}
 export const rows = Object.values(rowMap)
 export const bassRows = Object.values(bassRowMap)
 export const toggleBellows = 'q'
