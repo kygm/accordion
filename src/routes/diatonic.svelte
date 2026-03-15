@@ -1,5 +1,4 @@
 <script>
-  import { sleep } from "../helpers.js";
   import { keyMap } from "../data.js";
   import {
     bassKeyMap,
@@ -19,9 +18,60 @@
   // State
   let direction = "pull";
   let tuning = "FBE";
+  let language = "es";
   let activeButtonIdMap = {};
 
-  $: ({ layout, bassLayout, buttonIdMap, scales } = tuningLayouts[tuning]);
+  $: ({ layout, bassLayout, buttonIdMap } = tuningLayouts[tuning]);
+
+  const translations = {
+    en: {
+      title: "Diatonic Accordion",
+      subtitle:
+        "Play the diatonic button accordion with your computer keyboard",
+      language: "Language",
+      english: "English",
+      spanish: "Spanish",
+      howToUse: "How to use",
+      desktopOnly: "This app is only available on a desktop!",
+      tuning: "Tuning",
+      currentlyPlaying: "Currently Playing",
+      row: "Row",
+      col: "Col",
+      instructions: [
+        "Each key on the keyboard corresponds to a button on the accordion.",
+        "Hold down q to push the bellows. Default is pull.",
+        "The treble side buttons begin with z, a, and w.",
+        "The twelve bass buttons use the number row from 1 to =.",
+      ],
+      push: "push",
+      pull: "pull",
+    },
+    es: {
+      title: "Acordeón Diatónico",
+      subtitle:
+        "Toca el acordeón diatónico de botones con el teclado de tu computadora",
+      language: "Idioma",
+      english: "Inglés",
+      spanish: "Español",
+      howToUse: "Cómo usar",
+      desktopOnly:
+        "¡Esta aplicación solo está disponible en una computadora de escritorio!",
+      tuning: "Afinación",
+      currentlyPlaying: "Sonando Ahora",
+      row: "Fila",
+      col: "Col",
+      instructions: [
+        "Cada tecla del teclado corresponde a un botón del acordeón.",
+        "Mantén presionada la tecla q para empujar el fuelle. El valor predeterminado es jalar.",
+        "Los botones del lado derecho comienzan con z, a y w.",
+        "Los doce botones del bajo usan la fila numérica desde 1 hasta =.",
+      ],
+      push: "empujar",
+      pull: "jalar",
+    },
+  };
+
+  $: t = translations[language];
 
   function handleChangeTuning(e) {
     const nextTuning = e.target.value;
@@ -34,24 +84,26 @@
     tuning = nextTuning;
   }
 
-  // Handlers
+  function handleChangeLanguage(e) {
+    language = e.target.value;
+  }
+
   function playTone(id) {
     const { frequency } = buttonIdMap[id];
     let oscillator;
 
     if (Array.isArray(frequency)) {
       oscillator = frequency.map((hz) => {
-        const oscillator = audio.createOscillator();
-        oscillator.type = "sawtooth";
-        oscillator.connect(gainNode);
-        oscillator.frequency.value = hz;
-        oscillator.start();
-
-        return oscillator;
+        const osc = audio.createOscillator();
+        osc.type = "square";
+        osc.connect(gainNode);
+        osc.frequency.value = hz;
+        osc.start();
+        return osc;
       });
     } else {
       oscillator = audio.createOscillator();
-      oscillator.type = "sawtooth";
+      oscillator.type = "square";
       oscillator.connect(gainNode);
       oscillator.frequency.value = frequency;
       oscillator.start();
@@ -87,7 +139,6 @@
 
       const newActiveButtonIdMap = { ...activeButtonIdMap };
 
-      // When switching the bellows
       for (const [keyId, keyValues] of Object.entries(activeButtonIdMap)) {
         if (Array.isArray(keyValues.oscillator)) {
           keyValues.oscillator.forEach((osc) => osc?.stop());
@@ -113,7 +164,6 @@
   function updateActiveButtonMap(id) {
     if (!activeButtonIdMap[id]) {
       const { oscillator } = playTone(id);
-
       activeButtonIdMap[id] = { oscillator, ...buttonIdMap[id] };
     }
   }
@@ -131,7 +181,6 @@
     if (buttonMapData) {
       const { row, column } = buttonMapData;
       const id = `${row}-${column}-${direction}`;
-
       return updateActiveButtonMap(id);
     }
 
@@ -139,7 +188,6 @@
     if (bassButtonMapData) {
       const { row, column } = bassButtonMapData;
       const id = `${row}-${column}-${direction}-bass`;
-
       return updateActiveButtonMap(id);
     }
   }
@@ -195,57 +243,6 @@
     }
     activeButtonIdMap = {};
   };
-
-  async function playNotesInScale(idSet) {
-    handleClearAllNotes();
-
-    for (const id of idSet) {
-      if (!activeButtonIdMap[id]) {
-        const { oscillator } = playTone(id);
-
-        activeButtonIdMap[id] = { oscillator, ...buttonIdMap[id] };
-      }
-    }
-
-    await sleep(600);
-
-    for (const id of idSet) {
-      stopTone(id);
-      const newActiveButtonIdMap = { ...activeButtonIdMap };
-      delete newActiveButtonIdMap[id];
-      activeButtonIdMap = newActiveButtonIdMap;
-    }
-  }
-
-  function getScaleButtonIds(rowKey, interval) {
-    const rowButtons = layout[rowKey].filter(({ id }) => id.includes("pull"));
-    const startIndex = 5;
-    const pattern = [0, 1, 2, 3, 4, 5, 6, 7];
-
-    return pattern.map((offset, index) => {
-      const first = rowButtons[startIndex + offset]?.id;
-
-      if (interval === "thirds") {
-        const third = rowButtons[startIndex + offset + 2]?.id;
-        return index === pattern.length - 1
-          ? [first]
-          : [first, third].filter(Boolean);
-      }
-
-      return [first].filter(Boolean);
-    });
-  }
-
-  const playScale = (rowKey, type) => async () => {
-    const selectedScale = getScaleButtonIds(rowKey, type);
-    const reverse = [...selectedScale].reverse();
-    reverse.shift();
-    const scaleBackAndForth = [...selectedScale, ...reverse];
-
-    for (const idSet of scaleBackAndForth) {
-      await playNotesInScale(idSet);
-    }
-  };
 </script>
 
 <svelte:body
@@ -256,7 +253,7 @@
 
 <main>
   <div class="mobile-only">
-    <div class="banner">This app is only available on a desktop!</div>
+    <div class="banner">{t.desktopOnly}</div>
   </div>
 
   <div class="layout">
@@ -266,7 +263,7 @@
           <div class="row {row}">
             {#each layout[row].filter( ({ id }) => id.includes(direction), ) as button}
               <div
-                class={`circle ${activeButtonIdMap[button.id] ? "active" : ""} ${direction} `}
+                class={`circle ${activeButtonIdMap[button.id] ? "active" : ""} ${direction}`}
                 id={button.id}
                 on:mousedown={() => handleClickNote(button.id)}
               >
@@ -282,55 +279,73 @@
     <div class="information-side">
       <div class="information">
         <header class="header">
-          <h1 class="title">Diatonic Accordion</h1>
-          <div class="subtitle">
-            Play the diatonic button accordion with your computer keyboard
+          <div class="top-selectors">
+            <div class="selector-group">
+              <label for="language-select">{t.language}</label>
+              <select
+                id="language-select"
+                on:change={handleChangeLanguage}
+                bind:value={language}
+              >
+                <option value="en">{t.english}</option>
+                <option value="es">{t.spanish}</option>
+              </select>
+            </div>
+
+            <div class="selector-group">
+              <label for="tuning-select">{t.tuning}</label>
+              <select
+                id="tuning-select"
+                on:change={handleChangeTuning}
+                bind:value={tuning}
+              >
+                <option value="FBE">FB♭E♭ (Fa)</option>
+                <option value="GCF">GCF (Sol)</option>
+                <option value="EAD">EAD (Mi)</option>
+              </select>
+            </div>
           </div>
+
+          <h1 class="title">{t.title}</h1>
+          <div class="subtitle">{t.subtitle}</div>
         </header>
+
         <div>
-          <h3>How to use</h3>
+          <h3>{t.howToUse}</h3>
           <ul>
+            <li>{t.instructions[0]}</li>
             <li>
-              Each key on the keyboard corresponds to a button on the accordion.
+              {#if language === "en"}
+                Hold down <kbd>q</kbd> to <strong>{t.push}</strong> the bellows.
+                Default is
+                <strong>{t.pull}</strong>.
+              {:else}
+                Mantén presionada la tecla <kbd>q</kbd> para
+                <strong>{t.push}</strong>
+                el fuelle. El valor predeterminado es <strong>{t.pull}</strong>.
+              {/if}
             </li>
-            <li>
-              Hold down <kbd>q</kbd> to <strong>push</strong> the bellows.
-              Default is
-              <strong>pull</strong>.
-            </li>
-            <li>
-              The treble side buttons begin with <kbd>z</kbd>, <kbd>a</kbd>, and
-              <kbd>w</kbd>
-            </li>
-            <li>
-              The twelve bass buttons use the number row from <kbd>1</kbd> to
-              <kbd>=</kbd>
-            </li>
+            <li>{t.instructions[2]}</li>
+            <li>{t.instructions[3]}</li>
           </ul>
         </div>
 
-        <div class="flex">
-          <div>
-            <h3>Tuning</h3>
-            <select on:change={handleChangeTuning} bind:value={tuning}>
-              <option value="FBE">FB♭E♭ (Fa)</option>
-              <option value="GCF">GCF (Sol)</option>
-              <option value="EAD">EAD (Mi)</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="currently-playing">
-          {#each Object.entries(activeButtonIdMap) as [id, value]}
-            <div class="flex col">
-              <div class="circle note">{value.name}</div>
-              <div>
-                <small
-                  >Row: {id.split("-")[0]}<br /> Col: {id.split("-")[1]}</small
-                >
+        <div class="currently-playing-wrapper">
+          <h3>{t.currentlyPlaying}</h3>
+          <div class="currently-playing">
+            {#each Object.entries(activeButtonIdMap) as [id, value]}
+              <div class="flex col">
+                <div class="circle note">{value.name}</div>
+                <div>
+                  <small
+                    >{t.row}: {id.split("-")[0]}<br />{t.col}: {id.split(
+                      "-",
+                    )[1]}</small
+                  >
+                </div>
               </div>
-            </div>
-          {/each}
+            {/each}
+          </div>
         </div>
       </div>
     </div>
@@ -341,7 +356,7 @@
           <div class="row {row}">
             {#each bassLayout[row].filter( ({ id }) => id.includes(direction), ) as button}
               <div
-                class={`circle ${activeButtonIdMap[button.id] ? "active" : ""} ${direction} `}
+                class={`circle ${activeButtonIdMap[button.id] ? "active" : ""} ${direction}`}
                 id={button.id}
                 on:mousedown={() => handleClickNote(button.id)}
               >
