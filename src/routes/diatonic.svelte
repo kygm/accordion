@@ -19,6 +19,7 @@
   let direction = "pull";
   let tuning = "FBE";
   let language = "es";
+  let waveType = "square";
   let activeButtonIdMap = {};
 
   $: ({ layout, bassLayout, buttonIdMap } = tuningLayouts[tuning]);
@@ -31,6 +32,11 @@
       language: "Language",
       english: "English",
       spanish: "Spanish",
+      wave: "Wave",
+      sine: "Sine",
+      square: "Square",
+      sawtooth: "Sawtooth",
+      triangle: "Triangle",
       howToUse: "How to use",
       desktopOnly: "This app is only available on a desktop!",
       tuning: "Tuning",
@@ -42,6 +48,7 @@
         "Hold down q to push the bellows. Default is pull.",
         "The treble side buttons begin with z, a, and w.",
         "The twelve bass buttons use the number row from 1 to =.",
+        "Change the wave to change the sound type.",
       ],
       push: "push",
       pull: "pull",
@@ -53,6 +60,11 @@
       language: "Idioma",
       english: "Inglés",
       spanish: "Español",
+      wave: "Onda",
+      sine: "Seno",
+      square: "Cuadrada",
+      sawtooth: "Diente de sierra",
+      triangle: "Triangular",
       howToUse: "Cómo usar",
       desktopOnly:
         "¡Esta aplicación solo está disponible en una computadora de escritorio!",
@@ -65,6 +77,7 @@
         "Mantén presionada la tecla q para empujar el fuelle. El valor predeterminado es jalar.",
         "Los botones del lado derecho comienzan con z, a y w.",
         "Los doce botones del bajo usan la fila numérica desde 1 hasta =.",
+        "Cambea la onda para cambear el sonido.",
       ],
       push: "empujar",
       pull: "jalar",
@@ -88,6 +101,10 @@
     language = e.target.value;
   }
 
+  function handleChangeWave(e) {
+    waveType = e.target.value;
+  }
+
   function playTone(id) {
     const { frequency } = buttonIdMap[id];
     let oscillator;
@@ -95,7 +112,7 @@
     if (Array.isArray(frequency)) {
       oscillator = frequency.map((hz) => {
         const osc = audio.createOscillator();
-        osc.type = "square";
+        osc.type = waveType;
         osc.connect(gainNode);
         osc.frequency.value = hz;
         osc.start();
@@ -103,7 +120,7 @@
       });
     } else {
       oscillator = audio.createOscillator();
-      oscillator.type = "square";
+      oscillator.type = waveType;
       oscillator.connect(gainNode);
       oscillator.frequency.value = frequency;
       oscillator.start();
@@ -304,6 +321,20 @@
                 <option value="EAD">EAD (Mi)</option>
               </select>
             </div>
+
+            <div class="selector-group">
+              <label for="wave-select">{t.wave}</label>
+              <select
+                id="wave-select"
+                on:change={handleChangeWave}
+                bind:value={waveType}
+              >
+                <option value="sine">{t.sine}</option>
+                <option value="square">{t.square}</option>
+                <option value="sawtooth">{t.sawtooth}</option>
+                <option value="triangle">{t.triangle}</option>
+              </select>
+            </div>
           </div>
 
           <h1 class="title">{t.title}</h1>
@@ -327,6 +358,7 @@
             </li>
             <li>{t.instructions[2]}</li>
             <li>{t.instructions[3]}</li>
+            <li>{t.instructions[4]}</li>
           </ul>
         </div>
 
