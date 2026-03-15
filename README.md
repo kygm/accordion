@@ -1,25 +1,19 @@
-# Keyboard Accordion
+# Acordeon en linea
 
-Play the diatonic button accordion with your computer keyboard!
+Se puede tocar acordeon de sol, fa, y mi con esta aplicacion.
 
 ![](./screenshot.png)
 
-## Todo
-
-- Add CGF and EAD tunings
-
-## Get started
+## Como correr el programa
 
 ```bash
 npm install
 npm run dev
 ```
 
-Navigate to [localhost:8080](http://localhost:8080).
+Ir a [localhost:8080](http://localhost:8080).
 
-## Building and running in production mode
-
-To create an optimised version of the app:
+## Para generar la logica de produccion (para subir la logica a un servidor):
 
 ```bash
 npm run build
